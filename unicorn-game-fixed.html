@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Unicorn Rainbow Chase</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #f9c5d1, #b8e0f9);
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    
+    .header {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(255, 255, 255, 0.7);
+      border-radius: 20px;
+      padding: 8px 15px;
+      z-index: 10;
+      display: flex;
+      gap: 15px;
+    }
+    
+    .score {
+      font-size: 20px;
+      color: #9c27b0;
+      font-weight: bold;
+    }
+    
+    .hearts {
+      font-size: 20px;
+      color: #ff4081;
+      font-weight: bold;
+    }
+    
+    .time {
+      font-size: 20px;
+      color: #2196F3;
+      font-weight: bold;
+    }
+    
+    .lives {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 24px;
+      z-index: 10;
+    }
+    
+    .game-area {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    #unicorn {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      z-index: 5;
+    }
+    
+    .collectible {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      z-index: 3;
+    }
+    
+    .rainbow-heart {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      z-index: 6;
+    }
+    
+    .obstacle {
+      position: absolute;
+      font-size: 40px;
+      z-index: 4;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="score">🌈: <span id="score">0</span></div>
+    <div class="hearts">❤️: <span id="heart-count">0</span></div>
+    <div class="time">⏱️: <span id="game-time">0:00</span></div>
+  </div>
+  
+  <div class="lives">
+    <span id="lives">❤️❤️❤️</span>
+  </div>
+  
+  <div class="game-area" id="game-area">
+    <img id="unicorn" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZmRlZjQiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmZmEwZDAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBkPSJNMTgyIDMwYzI1IDAgNDYgMjEgNDYgNDYgMCAxMi01IDI0LTEzIDMzbDEzIDEzYzQgNCA0IDEwIDAgMTRsLTE0IDE0Yy00IDQtMTAgNC0xNCAwbC0xMy0xM2EzOSAzOSAwIDAxLTEzIDE4djQ1YTEwIDEwIDAgMDEtMTAgMTBoLTE0YTEwIDEwIDAgMDEtMTAtMTB2LTI5YTQ2IDQ2IDAgMDEtNiAxbC0xOCAzNWMtMiA1LTggNy0xMyA1cy03LTgtNS0xM2wxNy0zNGExMCAxMCAwIDAxOS01aDIwYzIzIDAgNDItMTkgNDItNDJzLTIwLTQyLTQzLTQyaC00YTEwIDEwIDAgMDEtOC01bC04LTE2YTEwIDEwIDAgMDE1LTEzbDI5LTE1YTEwIDEwIDAgMDExNCAwek0xNjAgMTEwYTIwIDIwIDAgMTAwLTQwIDIwIDIwIDAgMDAwIDQwem0tMjQtMTBhMTAgMTAgMCAxMDAtMjAgMTAgMTAgMCAwMDAgMjB6IiBmaWxsPSJ1cmwoI2EpIi8+PHBhdGggZD0iTTE2NSA3MGE1IDUgMCAxMDAtMTAgNSA1IDAgMDAwIDEweiIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik0xODIgMzBjLTQgMC04LTEtMTEtM2wtMjktMTVhMTUgMTUgMCAwMC0yMSA2bC04IDE2YzUgNyA2IDcgMTcgN2g0YTQ2IDQ2IDAgMDE0NiA0N2MwIDEzLTYgMjUtMTUgMzQtOSA4LTIxIDEzLTM0IDEzaC0yMGwtMTcgMzVhMTUgMTUgMCAwMDcgMjAgMTUgMTUgMCAwMDIwLTdsMTctMzUgMTguMiAxQTEwIDEwIDAgMDAxNjUgMTQwdjI5aDEzdi00NWwxMyAxMyAxNCAxNCAxNC0xNC0xMy0xM2MxMi0xNCAxNi0zNCA5LTUybC0zLTdjLTYtMTMtMTgtMjMtMzEtMjhaIiBmaWxsPSIjZmZiNGUwIi8+PHBhdGggZD0iTTk3IDIxOGExMCAxMCAwIDAxLTktNWwtMTctMzRhMTAgMTAgMCAwMTUtMTNsMjgtMTVhMzggMzggMCAwMTM4LTM4aDRhMTAgMTAgMCAwMTgtNWwxMi03YTEwIDEwIDAgMDExMyA0bDggMTNhMTAgMTAgMCAwMS00IDEzbC0xMiA3YTEwIDEwIDAgMDEtOCAwbC00LTJoLTdhMTggMTggMCAwMDAgMzZoN2MzIDAgNSAyIDggNmw3IDEzYTEwIDEwIDAgMDEtMyAxNGwtMjYgMTVhMTAgMTAgMCAwMS01IDFjLTQgMC03LTItOS01eiIgZmlsbD0idXJsKCNhKSIvPjxwYXRoIGQ9Ik05NyAyMThjNC0uMS03LTE1LTExLTE5LTQtNS0zMi0yMS00NiAwLTExIDE2LTUgNDYgOSA0Ni04LTEwLTExLTI2LTE4LTQwLTExLTIyLTMzIDYtNDEgMCA5LTMxIDQwLTY5IDc0LTYwIDE3IDQgMjcgMTYgMzUgMzAgMS0xNiAxNS0zMCAzMi0zMGg3YzExLTYgNy0xMi00LThsLTEyIDdoLTRhMzggMzggMCAwMC0zOCAzOGwtMjggMTUgMTcgMzR6IiBmaWxsPSIjZmZiNGUwIi8+PHBhdGggZD0iTTIxNSA4M2MwIDctNiAxMy0xMyAxM3MtMTMtNi0xMy0xMyA2LTEzIDEzLTEzIDEzIDYgMTMgMTN6bTEwLTEzYzAtNi01LTEwLTEwLTEwcy0xMCA0LTEwIDEwIDUgMTAgMTAgMTAgMTAtNCAxMC0xMHptMTUgMTNjMC03LTYtMTMtMTMtMTNzLTEzIDYtMTMgMTMgNiAxMyAxMyAxMyAxMy02IDEzLTEzem0wLTMzYzAtNi01LTEwLTEwLTEwcy0xMCA0LTEwIDEwIDUgMTAgMTAgMTAgMTAtNCAxMC0xMHptMTUgMTNjMC03LTYtMTMtMTMtMTNzLTEzIDYtMTMgMTMgNiAxMyAxMyAxMyAxMy02IDEzLTEzeiIgZmlsbD0iI2ZmZDYwMCIvPjxwYXRoIGQ9Ik0yNTMgOTRsLTM0LTIwYTUgNSAwIDAwLTcgMmwtNSA4aC0xNGE1IDUgMCAwMC01IDV2NGE1IDUgMCAwMDUgNWgxMWw1IDlhNSA1IDAgMDA3IDJsMzQtMjBhNSA1IDAgMDAwLTl6IiBmaWxsPSIjZmZkNjAwIi8+PC9zdmc+" alt="Unicorn">
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+              // Game elements
+      const unicorn = document.getElementById('unicorn');
+      const gameArea = document.getElementById('game-area');
+      const scoreElement = document.getElementById('score');
+      const heartCountElement = document.getElementById('heart-count');
+      const livesElement = document.getElementById('lives');
+      const gameTimeElement = document.getElementById('game-time');
+      
+      // Game variables
+      let score = 0;
+      let heartCount = 0;
+      let lives = 3;
+      let unicornX = 0;
+      let unicornY = 0;
+      let collectibles = [];
+      let obstacles = [];
+      let rainbowHearts = [];
+      let gameRunning = true;
+      let gameIntervals = [];
+      let gameStartTime = null;     // Added this line
+      let obstacleInterval = null;  // Added this line
+      
+      // Images
+      const rainbowImage = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MCA0MCI+PHBhdGggZD0iTTc1IDQwQzc1IDE4IDU4IDIgNDAgMlM1IDE4IDUgNDBoNzB6IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZjFhMWEiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTY3IDQwYzAtMTgtMTItMzAtMjctMzBTMTMgMjIgMTMgNDBoNTR6IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZjk1MDAiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTYwIDQwYzAtMTQtOS0yMy0yMC0yM1MyMCAyNiAyMCA0MGg0MHoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZjYwMCIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNNTMgNDBjMC0xMC03LTE2LTEzLTE2UzI3IDMwIDI3IDQwaDI2eiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTRlMDUwIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik00NiA0MGMwLTYtMy0xMC02LTEwcy02IDQtNiAxMGgxMnoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwYjVmZiIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=";
+      
+      const heartImage = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MCA3MCI+PHBhdGggZD0iTTQwIDcwQzM2IDY1IDIgMzcgMiAyMSAyIDEwIDEwIDIgMjEgMmM5IDAgMTUgNSAxOSAxM0M0NCA3IDUwIDIgNTkgMmMxMSAwIDE5IDggMTkgMTkgMCAxNi0zNCA0NC0zOCA0OXoiIGZpbGw9IiNmZjRhNzAiIHN0cm9rZT0iI2ZmMDAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+";
+      
+      const rainbowHeartImage = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MCA3MCI+PHBhdGggZD0iTTQwIDcwQzM2IDY1IDIgMzcgMiAyMSAyIDEwIDEwIDIgMjEgMmM5IDAgMTUgNSAxOSAxM0M0NCA3IDUwIDIgNTkgMmMxMSAwIDE5IDggMTkgMTkgMCAxNi0zNCA0NC0zOCA0OXoiIGZpbGw9InVybCgjcmFpbmJvdykiIHN0cm9rZT0iI2ZmY2MwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJyYWluYm93IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmYwMDAwIi8+PHN0b3Agb2Zmc2V0PSIxNyUiIHN0b3AtY29sb3I9IiNmZjlhMDAiLz48c3RvcCBvZmZzZXQ9IjMzJSIgc3RvcC1jb2xvcj0iI2Q0ZmYwMCIvPjxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjMDBmZjlhIi8+PHN0b3Agb2Zmc2V0PSI2NiUiIHN0b3AtY29sb3I9IiMwMDljZmYiLz48c3RvcCBvZmZzZXQ9IjgzJSIgc3RvcC1jb2xvcj0iI2E4MDBmZiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZmMDA5MyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjwvc3ZnPg==";
+      
+      // Update the game time display
+      function updateGameTime() {
+        if (!gameRunning) return;
+        
+        const now = Date.now();
+        if (!gameStartTime) gameStartTime = now; // Safety check
+        
+        const gameTimeSeconds = Math.floor((now - gameStartTime) / 1000);
+        const minutes = Math.floor(gameTimeSeconds / 60);
+        const seconds = gameTimeSeconds % 60;
+        
+        if (gameTimeElement) {
+          gameTimeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+      }
+      
+      // Initialize game variables
+      initGame();
+      
+      // Initialize the game
+      function initGame() {
+        // Clear existing intervals
+        gameIntervals.forEach(interval => clearInterval(interval));
+        gameIntervals = [];
+        
+        // Clear any existing obstacles
+        obstacles.forEach(item => {
+          if (item.element.parentNode) {
+            item.element.parentNode.removeChild(item.element);
+          }
+        });
+        obstacles = [];
+        
+        // Clear collectibles
+        collectibles.forEach(item => {
+          if (item.element.parentNode) {
+            item.element.parentNode.removeChild(item.element);
+          }
+        });
+        collectibles = [];
+        
+        // Clear rainbow hearts
+        rainbowHearts.forEach(item => {
+          if (item.element.parentNode) {
+            item.element.parentNode.removeChild(item.element);
+          }
+        });
+        rainbowHearts = [];
+        
+        const areaWidth = gameArea.clientWidth;
+        const areaHeight = gameArea.clientHeight;
+        
+        // Position unicorn in center
+        unicornX = (areaWidth / 2) - 35;
+        unicornY = (areaHeight / 2) - 35;
+        updateUnicornPosition();
+        
+        // Reset game state
+        score = 0;
+        heartCount = 0;
+        lives = 3;
+        scoreElement.textContent = "0";
+        heartCountElement.textContent = "0";
+        updateLives();
+        
+        // Reset game timer
+        gameStartTime = Date.now();
+        
+        // Set up game handlers
+        setupGameHandlers();
+        
+        // Start game loops
+        startGameLoops();
+      }
+      
+      function setupGameHandlers() {
+        // Add click/touch handler to move unicorn
+        gameArea.addEventListener('click', function(e) {
+          handleTouch(e);
+        });
+        
+        gameArea.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+          if (e.touches && e.touches[0]) {
+            handleTouch(e.touches[0]);
+          }
+        });
+      }
+      
+      function startGameLoops() {
+        // Reset game start time
+        gameStartTime = Date.now();
+        
+        // Create regular items
+        gameIntervals.push(setInterval(function() {
+          if (gameRunning) createItem();
+        }, 2000));
+        
+        // Dynamic obstacle creation based on game time
+        setupDynamicObstacleGeneration();
+        
+        // Create rainbow hearts (rare)
+        gameIntervals.push(setInterval(function() {
+          if (gameRunning && Math.random() < 0.3) createRainbowHeart();
+        }, 15000));
+        
+        // Main game loop
+        gameIntervals.push(setInterval(function() {
+          if (gameRunning) {
+            moveItems();
+            checkCollisions();
+            updateGameTime();
+          }
+        }, 50));
+      }
+      
+      // Set up dynamic obstacle generation that increases in frequency over time
+      function setupDynamicObstacleGeneration() {
+        // Clear existing obstacle interval if it exists
+        if (obstacleInterval) {
+          clearTimeout(obstacleInterval);
+          obstacleInterval = null;
+        }
+        
+        // Function to schedule the next obstacle
+        function scheduleNextObstacle() {
+          if (!gameRunning) return;
+          
+          // Calculate how long the game has been running (in seconds)
+          const gameTimeSeconds = (Date.now() - gameStartTime) / 1000;
+          
+          // Create obstacle
+          createObstacle();
+          
+          // Calculate next obstacle delay:
+          // Start with 12 seconds between obstacles
+          // Decrease to minimum of 4 seconds over 3 minutes of gameplay
+          // Formula: delay = maxDelay - (elapsedTime / totalTime) * (maxDelay - minDelay)
+          const maxDelay = 12000; // 12 seconds at start
+          const minDelay = 4000;  // 4 seconds after 3 minutes
+          const totalTime = 180;  // 3 minutes (180 seconds) to reach max difficulty
+          
+          let nextDelay = maxDelay - (gameTimeSeconds / totalTime) * (maxDelay - minDelay);
+          
+          // Ensure we don't go below minimum delay
+          nextDelay = Math.max(nextDelay, minDelay);
+          
+          // Schedule next obstacle
+          obstacleInterval = setTimeout(scheduleNextObstacle, nextDelay);
+        }
+        
+        // Start with initial delay (longer at beginning)
+        obstacleInterval = setTimeout(scheduleNextObstacle, 15000); // First obstacle after 15 seconds
+      }
+      
+      // Update rainbow heart lives display
+      function updateLives() {
+        let heartsHTML = '';
+        for (let i = 0; i < lives; i++) {
+          heartsHTML += '<span style="background:linear-gradient(to right,red,orange,yellow,green,blue,violet);-webkit-background-clip:text;color:transparent;">❤️</span>';
+        }
+        livesElement.innerHTML = heartsHTML;
+      }
+      
+      // Handle touch event to move unicorn
+      function handleTouch(event) {
+        if (!gameRunning) return;
+        
+        const areaRect = gameArea.getBoundingClientRect();
+        
+        // Get touch coordinates relative to game area
+        const touchX = (event.clientX || event.pageX) - areaRect.left;
+        const touchY = (event.clientY || event.pageY) - areaRect.top;
+        
+        // Move unicorn in that direction
+        moveUnicornToward(touchX, touchY);
+      }
+      
+      // Move unicorn toward a target position
+      function moveUnicornToward(targetX, targetY) {
+        // Get unicorn center position
+        const unicornCenterX = unicornX + 35;
+        const unicornCenterY = unicornY + 35;
+        
+        // Calculate direction
+        const dirX = targetX - unicornCenterX;
+        const dirY = targetY - unicornCenterY;
+        
+        // Calculate distance
+        const distance = Math.sqrt(dirX * dirX + dirY * dirY);
+        
+        if (distance > 0) {
+          // Move unicorn by fixed amount in that direction
+          const moveSpeed = 30;
+          unicornX += (dirX / distance) * moveSpeed;
+          unicornY += (dirY / distance) * moveSpeed;
+          
+          // Flip unicorn based on direction
+          if (dirX < 0) {
+            unicorn.style.transform = 'scaleX(-1)';
+          } else {
+            unicorn.style.transform = 'scaleX(1)';
+          }
+          
+          // Keep unicorn within bounds
+          const areaWidth = gameArea.clientWidth;
+          const areaHeight = gameArea.clientHeight;
+          unicornX = Math.max(0, Math.min(unicornX, areaWidth - 70));
+          unicornY = Math.max(0, Math.min(unicornY, areaHeight - 70));
+          
+          updateUnicornPosition();
+        }
+      }
+      
+      // Update unicorn position
+      function updateUnicornPosition() {
+        unicorn.style.left = unicornX + 'px';
+        unicorn.style.top = unicornY + 'px';
+      }
+      
+      // Create a rainbow or heart
+      function createItem() {
+        const areaWidth = gameArea.clientWidth;
+        const areaHeight = gameArea.clientHeight;
+        
+        // Choose item type (rainbow or heart)
+        const isRainbow = Math.random() < 0.7;
+        const itemType = isRainbow ? 'rainbow' : 'heart';
+        
+        // Create element
+        const item = document.createElement('img');
+        item.className = 'collectible';
+        item.src = itemType === 'rainbow' ? rainbowImage : heartImage;
+        
+        // Position at random edge
+        let x, y;
+        const side = Math.floor(Math.random() * 4);
+        
+        switch(side) {
+          case 0: // top
+            x = Math.random() * (areaWidth - 40);
+            y = -40;
+            break;
+          case 1: // right
+            x = areaWidth;
+            y = Math.random() * (areaHeight - 40);
+            break;
+          case 2: // bottom
+            x = Math.random() * (areaWidth - 40);
+            y = areaHeight;
+            break;
+          case 3: // left
+            x = -40;
+            y = Math.random() * (areaHeight - 40);
+            break;
+        }
+        
+        // Set position
+        item.style.left = x + 'px';
+        item.style.top = y + 'px';
+        
+        // Add to game area
+        gameArea.appendChild(item);
+        
+        // Set speed (hearts are faster and more evasive)
+        const baseSpeed = itemType === 'heart' ? 3 : 2;
+        
+        // Store item data
+        collectibles.push({
+          element: item,
+          type: itemType,
+          x: x,
+          y: y,
+          speed: baseSpeed
+        });
+      }
+      
+      // Create a rainbow heart
+      function createRainbowHeart() {
+        const areaWidth = gameArea.clientWidth;
+        const areaHeight = gameArea.clientHeight;
+        
+        // Create element
+        const item = document.createElement('img');
+        item.className = 'rainbow-heart';
+        item.src = rainbowHeartImage;
+        
+        // Make rainbow hearts slightly larger for easier catching
+        item.style.width = '60px';  // Increased from default 50px
+        item.style.height = '60px'; // Increased from default 50px
+        
+        // Position at random edge
+        let x, y;
+        const side = Math.floor(Math.random() * 4);
+        
+        switch(side) {
+          case 0: // top
+            x = Math.random() * (areaWidth - 60);
+            y = -60;
+            break;
+          case 1: // right
+            x = areaWidth;
+            y = Math.random() * (areaHeight - 60);
+            break;
+          case 2: // bottom
+            x = Math.random() * (areaWidth - 60);
+            y = areaHeight;
+            break;
+          case 3: // left
+            x = -60;
+            y = Math.random() * (areaHeight - 60);
+            break;
+        }
+        
+        // Set position
+        item.style.left = x + 'px';
+        item.style.top = y + 'px';
+        
+        // Add to game area
+        gameArea.appendChild(item);
+        
+        // Rainbow hearts are now slightly less fast and evasive
+        rainbowHearts.push({
+          element: item,
+          x: x,
+          y: y,
+          speed: 3.2  // Reduced from 4
+        });
+      }
+      
+      // Create an obstacle (poop emoji)
+      function createObstacle() {
+        const areaWidth = gameArea.clientWidth;
+        const areaHeight = gameArea.clientHeight;
+        
+        // Create element
+        const item = document.createElement('div');
+        item.className = 'obstacle';
+        item.innerHTML = '💩';
+        
+        // Position obstacles more frequently at sides than top/bottom to avoid the stuck issue
+        // 15% chance from top, 30% from right, 25% from bottom, 30% from left
+        const sideRandom = Math.random();
+        let side;
+        
+        if (sideRandom < 0.15) {
+          side = 0; // top (reduced probability)
+        } else if (sideRandom < 0.45) {
+          side = 1; // right
+        } else if (sideRandom < 0.70) {
+          side = 2; // bottom
+        } else {
+          side = 3; // left
+        }
+        
+        let x, y;
+        switch(side) {
+          case 0: // top
+            x = Math.random() * (areaWidth - 40);
+            y = -40;
+            break;
+          case 1: // right
+            x = areaWidth;
+            y = Math.random() * (areaHeight - 40);
+            break;
+          case 2: // bottom
+            x = Math.random() * (areaWidth - 40);
+            y = areaHeight;
+            break;
+          case 3: // left
+            x = -40;
+            y = Math.random() * (areaHeight - 40);
+            break;
+        }
+        
+        // Set position
+        item.style.left = x + 'px';
+        item.style.top = y + 'px';
+        
+        // Add to game area
+        gameArea.appendChild(item);
+        
+        // Set initial direction based on where it spawned
+        let dirX = 0, dirY = 0;
+        
+        switch(side) {
+          case 0: // from top, move down with MUCH stronger downward movement
+            dirX = (Math.random() - 0.5);
+            dirY = Math.random() * 0.5 + 1.5; // Very strong downward (1.5-2.0)
+            break;
+          case 1: // from right, move left
+            dirX = -(Math.random() * 0.5 + 0.7);
+            dirY = (Math.random() - 0.5) * 1.4;
+            break;
+          case 2: // from bottom, move up
+            dirX = (Math.random() - 0.5);
+            dirY = -(Math.random() * 0.5 + 0.7);
+            break;
+          case 3: // from left, move right
+            dirX = Math.random() * 0.5 + 0.7;
+            dirY = (Math.random() - 0.5) * 1.4;
+            break;
+        }
+        
+        // Normalize the direction vector
+        const magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
+        dirX = dirX / magnitude;
+        dirY = dirY / magnitude;
+        
+        // Store obstacle data with faster speed
+        obstacles.push({
+          element: item,
+          x: x,
+          y: y,
+          dirX: dirX,
+          dirY: dirY,
+          speed: 2.5,  // Increased from 2
+          stuckTime: 0 // Track how long it might be stuck
+        });
+      }
+      
+      // Move all items
+      function moveItems() {
+        const unicornCenterX = unicornX + 35;
+        const unicornCenterY = unicornY + 35;
+        const areaWidth = gameArea.clientWidth;
+        const areaHeight = gameArea.clientHeight;
+        
+        // Move collectibles
+        for (let i = collectibles.length - 1; i >= 0; i--) {
+          const item = collectibles[i];
+          
+          // Calculate direction to unicorn
+          const dx = unicornCenterX - (item.x + 20);
+          const dy = unicornCenterY - (item.y + 20);
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance > 0) {
+            // For hearts, evade when close to unicorn (smoother movement)
+            if (item.type === 'heart' && distance < 150) {
+              // Calculate evasion factor based on distance (smoother transition)
+              const evasionFactor = Math.min(1.0, (150 - distance) / 100);
+              
+              // Move perpendicular to avoid directly backing away
+              const perpX = -dy / distance;
+              const perpY = dx / distance;
+              
+              // Blend between approach and evasion for smoother movement
+              const approachWeight = 1 - evasionFactor;
+              const evasionWeight = evasionFactor;
+              
+              // Smoothly blend movement behaviors
+              item.x += (dx / distance) * item.speed * approachWeight; // Approach component
+              item.y += (dy / distance) * item.speed * approachWeight; // Approach component
+              
+              item.x -= (dx / distance) * item.speed * 0.6 * evasionWeight; // Evasion component
+              item.y -= (dy / distance) * item.speed * 0.6 * evasionWeight; // Evasion component
+              
+              item.x += perpX * item.speed * 0.4 * evasionWeight; // Circular movement
+              item.y += perpY * item.speed * 0.4 * evasionWeight; // Circular movement
+            } else {
+              // Move toward unicorn
+              item.x += (dx / distance) * item.speed;
+              item.y += (dy / distance) * item.speed;
+            }
+          }
+          
+          // Update position
+          item.element.style.left = item.x + 'px';
+          item.element.style.top = item.y + 'px';
+          
+          // Remove if off screen
+          if (item.x < -100 || item.x > areaWidth + 100 || 
+              item.y < -100 || item.y > areaHeight + 100) {
+            if (item.element.parentNode) {
+              item.element.parentNode.removeChild(item.element);
+            }
+            collectibles.splice(i, 1);
+          }
+        }
+        
+        // Move rainbow hearts (less evasive now)
+        for (let i = rainbowHearts.length - 1; i >= 0; i--) {
+          const item = rainbowHearts[i];
+          
+          // Calculate direction to unicorn
+          const dx = unicornCenterX - (item.x + 25);
+          const dy = unicornCenterY - (item.y + 25);
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance > 0) {
+            // Rainbow hearts evade less aggressively now
+            if (distance < 150) {
+              // Move perpendicular to avoid directly backing away
+              const perpX = -dy / distance;
+              const perpY = dx / distance;
+              
+              // Move away and circle around (reduced evasion speed)
+              item.x -= (dx / distance) * item.speed * 0.6; // Reduced from 1.2
+              item.y -= (dy / distance) * item.speed * 0.6; // Reduced from 1.2
+              item.x += perpX * item.speed * 0.6; // Reduced from 0.8
+              item.y += perpY * item.speed * 0.6; // Reduced from 0.8
+              
+              // Occasionally move toward the unicorn to give player a chance
+              if (Math.random() < 0.1) {
+                item.x += (dx / distance) * item.speed * 0.5;
+                item.y += (dy / distance) * item.speed * 0.5;
+              }
+            } else {
+              // When far, move more toward unicorn to stay engaged
+              item.x += (dx / distance) * item.speed * 0.5; // Increased from 0.3
+              item.y += (dy / distance) * item.speed * 0.5; // Increased from 0.3
+            }
+          }
+          
+          // Update position
+          item.element.style.left = item.x + 'px';
+          item.element.style.top = item.y + 'px';
+          
+          // Remove if off screen
+          if (item.x < -100 || item.x > areaWidth + 100 || 
+              item.y < -100 || item.y > areaHeight + 100) {
+            if (item.element.parentNode) {
+              item.element.parentNode.removeChild(item.element);
+            }
+            rainbowHearts.splice(i, 1);
+          }
+        }
+        
+        // Move obstacles (bounce around)
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          const item = obstacles[i];
+          
+          // Move in current direction
+          item.x += item.dirX * item.speed;
+          item.y += item.dirY * item.speed;
+          
+          // Bounce off edges
+          if (item.x < 0 || item.x > areaWidth - 40) {
+            item.dirX *= -1;
+          }
+          if (item.y < 0 || item.y > areaHeight - 40) {
+            item.dirY *= -1;
+          }
+          
+          // Force poops to move into the screen if near top edge
+          if (item.y < 50) {
+            // Apply a strong downward force
+            item.dirY = Math.abs(item.dirY) + 0.5;
+            
+            // Also add some randomness to X direction to prevent side-to-side oscillation
+            item.dirX += (Math.random() - 0.5) * 0.3;
+          }
+          
+          // Force poops to move into the screen if at other edges
+          if (item.x < 10) {
+            item.dirX = Math.abs(item.dirX) + 0.2; // Push right
+          } else if (item.x > areaWidth - 50) {
+            item.dirX = -Math.abs(item.dirX) - 0.2; // Push left
+          }
+          
+          if (item.y > areaHeight - 50) {
+            item.dirY = -Math.abs(item.dirY) - 0.2; // Push up
+          }
+          
+          // Normalize direction vector to maintain consistent speed
+          const magnitude = Math.sqrt(item.dirX * item.dirX + item.dirY * item.dirY);
+          item.dirX = item.dirX / magnitude;
+          item.dirY = item.dirY / magnitude;
+          
+          // Update position
+          item.element.style.left = item.x + 'px';
+          item.element.style.top = item.y + 'px';
+          
+          // Remove after a while
+          if (Math.random() < 0.001) {
+            if (item.element.parentNode) {
+              item.element.parentNode.removeChild(item.element);
+            }
+            obstacles.splice(i, 1);
+          }
+        }
+      }
+      
+      // Check collisions between unicorn and items
+      function checkCollisions() {
+        const unicornCenterX = unicornX + 35;
+        const unicornCenterY = unicornY + 35;
+        
+        // Check collectibles
+        for (let i = collectibles.length - 1; i >= 0; i--) {
+          const item = collectibles[i];
+          const itemCenterX = item.x + 20;
+          const itemCenterY = item.y + 20;
+          
+          // Calculate distance
+          const dx = unicornCenterX - itemCenterX;
+          const dy = unicornCenterY - itemCenterY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          // If collision
+          if (distance < 40) {
+            if (item.type === 'rainbow') {
+              // Collect rainbow
+              score++;
+              scoreElement.textContent = score;
+            } else if (item.type === 'heart') {
+              // Collect heart
+              heartCount++;
+              heartCountElement.textContent = heartCount;
+              
+              // Check for extra life
+              if (heartCount >= 10) {
+                heartCount -= 10;
+                heartCountElement.textContent = heartCount;
+                lives++;
+                updateLives();
+              }
+            }
+            
+            // Remove collected item
+            gameArea.removeChild(item.element);
+            collectibles.splice(i, 1);
+          }
+        }
+        
+        // Check rainbow hearts
+        for (let i = rainbowHearts.length - 1; i >= 0; i--) {
+          const item = rainbowHearts[i];
+          const itemCenterX = item.x + 25;
+          const itemCenterY = item.y + 25;
+          
+          // Calculate distance
+          const dx = unicornCenterX - itemCenterX;
+          const dy = unicornCenterY - itemCenterY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          // If collision
+          if (distance < 45) {
+            // Collect rainbow heart (immediate extra life)
+            lives++;
+            updateLives();
+            
+            // Remove collected item
+            gameArea.removeChild(item.element);
+            rainbowHearts.splice(i, 1);
+          }
+        }
+        
+        // Check obstacles
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          const item = obstacles[i];
+          const itemCenterX = item.x + 20;
+          const itemCenterY = item.y + 20;
+          
+          // Calculate distance
+          const dx = unicornCenterX - itemCenterX;
+          const dy = unicornCenterY - itemCenterY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          // If collision
+          if (distance < 40) {
+            // Hit obstacle (lose a life)
+            lives--;
+            updateLives();
+            
+            // Remove obstacle
+            gameArea.removeChild(item.element);
+            obstacles.splice(i, 1);
+            
+            // Check for game over
+            if (lives <= 0) {
+              gameOver();
+            }
+          }
+        }
+      }
+      
+      // Game over
+      function gameOver() {
+        gameRunning = false;
+        
+        // Clear obstacle generation timeout
+        if (obstacleInterval) {
+          clearTimeout(obstacleInterval);
+          obstacleInterval = null;
+        }
+        
+        // Calculate game time
+        const gameTimeSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
+        const minutes = Math.floor(gameTimeSeconds / 60);
+        const seconds = gameTimeSeconds % 60;
+        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Create game over message
+        const gameOverMsg = document.createElement('div');
+        gameOverMsg.style.position = 'absolute';
+        gameOverMsg.style.top = '50%';
+        gameOverMsg.style.left = '50%';
+        gameOverMsg.style.transform = 'translate(-50%, -50%)';
+        gameOverMsg.style.fontSize = '36px';
+        gameOverMsg.style.fontWeight = 'bold';
+        gameOverMsg.style.color = '#ff4081';
+        gameOverMsg.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
+        gameOverMsg.style.backgroundColor = 'rgba(255,255,255,0.8)';
+        gameOverMsg.style.padding = '20px';
+        gameOverMsg.style.borderRadius = '10px';
+        gameOverMsg.style.zIndex = '100';
+        gameOverMsg.style.textAlign = 'center';
+        gameOverMsg.innerHTML = `
+          <div style="margin-bottom:15px;font-size:42px;">Game Over!</div>
+          <div style="margin-bottom:10px;">🌈 Score: ${score}</div>
+          <div style="margin-bottom:10px;">❤️ Hearts: ${heartCount}</div>
+          <div style="margin-bottom:20px;">⏱️ Time: ${timeString}</div>
+          <div style="font-size:24px;">Tap to play again</div>
+        `;
+        
+        gameArea.appendChild(gameOverMsg);
+        
+        // Add restart handler
+        gameArea.addEventListener('click', function restartHandler() {
+          gameArea.removeChild(gameOverMsg);
+          gameArea.removeEventListener('click', restartHandler);
+          
+          // Restart game
+          gameRunning = true;
+          initGame();
+        });
+      }
+    });
+  </script>
+</body>
+</html>
